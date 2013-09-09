@@ -202,6 +202,8 @@ print(@[obj getMyData]) -- prints 4
 
 As you can see, this works even when referencing the object by globals from inside the class, as shown in the init function.
 
+Finally, you can overwrite the setter and getter methods. In fact, if you want to overwrite them both, you don't even need the @property declaration. Either way the obj.var syntax will work.
+
 
 ##Have fun!
 
