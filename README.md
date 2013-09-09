@@ -59,7 +59,7 @@ The compiler sees the @" symbols and parses the rest as a string, returns a name
 
 ```
 function @(someFunction:param secondParam:param2)
-	return param = param2
+	return param + param2
 end
 local x = @"someFunction:secondParam:"(firstParam, secondParam)
 ```
