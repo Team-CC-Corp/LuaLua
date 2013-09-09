@@ -9,7 +9,7 @@ LuaLua was built for ComputerCraft. That's the only Lua environment I've dealt w
 
 #Usage
 
-It's fairly simple. Download this as a zip, extract it, and copy the LuaLua directory to your ComputerCraft computer. Run load.lua from the shell to enable LuaLua's many features. As long as the files in that folder are in the same directory toghether, it will work.
+It's fairly simple. Download this as a zip, extract it, and copy the LuaLua directory to your ComputerCraft computer. As long as the files in that folder are in the same directory toghether, it will work. Run load.lua from the shell to enable LuaLua's many features. After running, the files will not be needed again until the computer reboots. Any other files run after loading LuaLua will be compiled with the LuaLua compiler instead of the standard LuaJ one.
 
 #Functions
 
