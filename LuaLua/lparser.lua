@@ -1772,54 +1772,21 @@ end
 
 -- }======================================================================
 
-function luaY:methodnameparlist(ls, fs)
-	local f = fs.f
-	local nparams = 0
-	f.is_vararg = 0
-	local reserved = false
-
-	local name = self:str_checkname(ls)
-	while self:testnext(ls, ":") do
-		name = name .. ":"
-		luaX:lookahead(ls)
-		if ls.lookahead.token == "," or ls.lookahead.token == ")" then
-			self:adjustlocalvars(ls, nparams)
-			nparams = 0
-			self:parlist(ls)
-			reserved = true
-			break
-		else
-			self:new_localvar(ls, self:str_checkname(ls), nparams)
-			nparams = nparams + 1
-			name = name .. self:str_checkname(ls)
-		end
-	end
-
-	self:adjustlocalvars(ls, nparams)
-	-- NOTE: the following works only when HASARG_MASK is 2!
-	f.numparams = fs.nactvar - (f.is_vararg % self.HASARG_MASK)
-	if not reserved then
-		luaK:reserveregs(fs, fs.nactvar)  -- reserve register for parameters
-	end
-	return name
-end
-
 function luaY:methodstat(ls, line, v, b, newlocal)
 	-- methodstat ->  methodnameparlist chunk END
-	local new_fs = {}  -- FuncState
-				new_fs.upvalues = {}
-				new_fs.actvar = {}
-	self:open_func(ls, new_fs)
-	new_fs.f.lineDefined = line
-	
-	local varname = self:methodnameparlist(ls, new_fs)
-	self:checknext(ls, ")")
-
-	self:chunk(ls)
-	new_fs.f.lastlinedefined = ls.linenumber
-	self:check_match(ls, "TK_END", "TK_FUNCTION", line)
-	self:close_func(ls)
-	self:pushclosure(ls, new_fs, b)
+	local varname, parlist = "", {}
+	local parseMore = false
+	varname = varname .. self:str_checkname(ls)
+	while self:testnext(ls, ":") and not parseMore do
+		varname = varname .. ":"
+		luaX:lookahead(ls)
+		if ls.lookahead.token == "," or ls.lookahead.token == ")" then
+			parseMore = true
+		else
+			parlist[#parlist + 1] = self:str_checkname(ls)
+			varname = varname .. self:str_checkname(ls)
+		end
+	end
 	local fs = ls.fs
 	if newlocal then
 		self:new_localvar(ls, varname, 0)
@@ -1831,6 +1798,35 @@ function luaY:methodstat(ls, line, v, b, newlocal)
 			v.info = luaK:stringK(fs, varname)  -- info points to global name
 		end
 	end
+
+
+	local new_fs = {}  -- FuncState
+				new_fs.upvalues = {}
+				new_fs.actvar = {}
+	self:open_func(ls, new_fs)
+	new_fs.f.lineDefined = line
+
+	local nparams = 0
+	for i,v in ipairs(parlist) do
+		self:new_localvar(ls, v, nparams)
+		nparams = nparams + 1
+	end
+
+	self:adjustlocalvars(ls, nparams)
+
+	if parseMore then
+		self:parlist(ls)
+	else
+		luaK:reserveregs(fs, fs.nactvar)
+	end
+	fs.f.numparams = fs.nactvar - (fs.f.is_vararg % self.HASARG_MASK)
+	self:checknext(ls, ")")
+
+	self:chunk(ls)
+	new_fs.f.lastlinedefined = ls.linenumber
+	self:check_match(ls, "TK_END", "TK_FUNCTION", line)
+	self:close_func(ls)
+	self:pushclosure(ls, new_fs, b)
 end
 
 

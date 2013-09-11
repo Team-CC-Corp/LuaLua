@@ -90,6 +90,22 @@ local function setObjectProperty(obj, propName, getter, setter, methodsTable)
 	tMethods["set"..propName:sub(1,1):upper()..propName:sub(2)..":"] = setter or function() error(propName .. " is not writable", 3) end
 end
 
+function _G.assert(condition, errMsg, level)
+	if condition then return condition end
+	if type(level) ~= "number" then
+		level = 2
+	elseif level <= 0 then
+		level = 0
+	else
+		level = level + 1
+	end
+	error(errMsg or "Assertion failed!", level)
+end
+
+function fs.getDir(_sPath)
+	return fs.combine("", _sPath:sub(1, -1 - #(fs.getName(_sPath))))
+end
+
 ------- Instantiation stuff
 
 local function createMethods(class, obj)
@@ -219,3 +235,34 @@ end, function(self, super)
 		return newClass(self, instance, static)
 	end
 end)
+
+
+------- Modules
+
+local function @(createRequireForDir:dir withModules:modules)
+	return function(file)
+		assert(type(file) == "string", "Path expected", 2)
+		if file:sub(1,1) == "/" or file:sub(1,1) == "\\" then
+			dir = ""
+		end
+		file = fs.combine(dir, file)
+		if modules[file] then
+			return modules[file]
+		end
+		assert(fs.exists(file) and not fs.isDir(file), "Expected module", 2)
+		local f, err = loadfile(file)
+		assert(f, err, 2)
+		local env = setmetatable({}, {__index = _G})
+		env.require = @{createRequireForDir:fs.getDir(file) withModules:modules}
+		setfenv(f, env)
+		modules[file] = f()
+		return modules[file]
+	end
+end
+
+local oldRun = os.run
+function os.run( _tEnv, _sPath, ... )
+	local modules = {}
+	_tEnv.require = @{createRequireForDir:fs.getDir(_sPath) withModules:modules}
+	oldRun(_tEnv, _sPath, ...)
+end
