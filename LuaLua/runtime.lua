@@ -125,7 +125,7 @@ local function createMethods(class, obj)
 	-- obj's metatable can't be made until after methods are created
 	-- must therefore not reference it until after instantiation
 	local mt = {
-		__index = function() end,
+		__index = oldEnv,
 		__newindex = methods
 	}
 	setmetatable(env, mt)
