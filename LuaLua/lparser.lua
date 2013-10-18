@@ -2004,9 +2004,47 @@ function luaY:classstat(ls, line)
 	luaK:storevar(ls.fs, v, b)
 end
 
+function luaY:createattribute(ls, param)
+	return {
+		val = param,
+		line = ls.linenumber
+	}
+end
+
+function luaY:propertyattributes(ls, attributes)
+	while true do
+		local attr = self:str_checkname(ls)
+		if self:testnext(ls, "=") then
+			attributes[attr] = self:createattribute(ls, self:str_checkname(ls))
+		else
+			attributes[attr] = self:createattribute(ls, "true")
+		end
+		if not self:testnext(ls, ",") then
+			self:checknext(ls, ")")
+			break
+		end
+	end
+end
+
 function luaY:propertystat(ls, line)
 	luaX:next(ls)
+
+	local attributes = {
+		readonly=self:createattribute(ls, "false"),
+		writeonly=self:createattribute(ls, "false")
+	}
+	if self:testnext(ls, "(") then
+		self:propertyattributes(ls, attributes)
+	end
+
 	local name = self:str_checkname(ls)
+	if not attributes.setter then
+		attributes.setter = self:createattribute(ls, "set"..name:sub(1,1):upper()..name:sub(2))
+	end
+	if not attributes.getter then
+		attributes.getter = self:createattribute(ls, "get"..name:sub(1,1):upper()..name:sub(2))
+	end
+
 	local localName = "_" .. name
 	local isCustomName = false
 	if self:testnext(ls, "=") then
@@ -2023,59 +2061,91 @@ function luaY:propertystat(ls, line)
 
 	-- local
 	self:new_localvar(ls, localName, 0)
+	luaK:reserveregs(ls.fs, 1)
 	self:adjustlocalvars(ls, 1)
 
-	-- setter
-	local set_fs = {}
-				set_fs.upvalues = {}
-				set_fs.actvar = {}
-	self:open_func(ls, set_fs)
-	set_fs.f.lineDefined = ls.linenumber
-	set_fs.f.lastlinedefined = ls.linenumber
+	-- prop func
+	local propertyCreator = {}
+	self:init_exp(propertyCreator, "VGLOBAL", luaP.NO_REG)
+	propertyCreator.info = luaK:stringK(ls.fs, "setProperty:withGetter:named:andSetter:named:")
+	luaK:exp2nextreg(ls.fs, propertyCreator)
+	local base = propertyCreator.info
+	luaK:checkstack(ls.fs, 5)
 
-	local paramName = "set" .. localName
-	self:new_localvar(ls, paramName, 0)
-	self:adjustlocalvars(ls, 1)
-	set_fs.f.numparams = set_fs.nactvar - (set_fs.f.is_vararg % self.HASARG_MASK)
-	luaK:reserveregs(set_fs, set_fs.nactvar)
-
-	local setTo = {}
-	self:singlevaraux(set_fs, paramName, setTo, 1)
-
-	local setlocvar = {}
-	self:singlevaraux(set_fs, localName, setlocvar)
-	luaK:storevar(set_fs, setlocvar, setTo)
-
-	self:close_func(ls)
-	local setterclosure = {}
-	self:pushclosure(ls, set_fs, setterclosure)
-
-	local globalsetter = {}
-	self:init_exp(globalsetter, "VGLOBAL", luaP.NO_REG)
-	globalsetter.info = luaK:stringK(ls.fs, "set"..name:sub(1,1):upper()..name:sub(2)..":")
-	luaK:storevar(ls.fs, globalsetter, setterclosure)
+	-- prop name
+	local propnameexp = {}
+	self:codestring(ls, propnameexp, name)
+	luaK:exp2reg(ls.fs, propnameexp, base + 1)
 
 	-- getter
-	local get_fs = {}
-				get_fs.upvalues = {}
-				get_fs.actvar = {}
-	self:open_func(ls, get_fs)
-	get_fs.f.lineDefined = ls.linenumber
-	get_fs.f.lastlinedefined = ls.linenumber
+	local getterexp = {}
+	if attributes.writeonly.val ~= "true" then
+		local get_fs = {}
+					get_fs.upvalues = {}
+					get_fs.actvar = {}
+		self:open_func(ls, get_fs)
+		get_fs.f.lineDefined = ls.linenumber
+		get_fs.f.lastlinedefined = ls.linenumber
 
-	local getlocvar = {}
-	self:singlevaraux(get_fs, localName, getlocvar)
-	local getreg = luaK:exp2anyreg(get_fs, getlocvar)
-	luaK:ret(get_fs, getreg, 1)
+		local getlocvar = {}
+		self:singlevaraux(get_fs, localName, getlocvar)
+		local getreg = luaK:exp2anyreg(get_fs, getlocvar)
+		luaK:ret(get_fs, getreg, 1)
 
-	self:close_func(ls)
-	local getterclosure = {}
-	self:pushclosure(ls, get_fs, getterclosure)
+		self:close_func(ls)
+		self:pushclosure(ls, get_fs, getterexp)
+	else
+		self:init_exp(getterexp, "VNIL", 0)
+	end
+	luaK:exp2reg(ls.fs, getterexp, base + 2)
+	local getternameexp = {}
+	self:codestring(ls, getternameexp, attributes.getter.val)
+	luaK:exp2reg(ls.fs, getternameexp, base + 3)
 
-	local globalgetter = {}
+	--[[local globalgetter = {}
 	self:init_exp(globalgetter, "VGLOBAL", luaP.NO_REG)
 	globalgetter.info = luaK:stringK(ls.fs, "get"..name:sub(1,1):upper()..name:sub(2))
-	luaK:storevar(ls.fs, globalgetter, getterclosure)
+	luaK:storevar(ls.fs, globalgetter, getterexp)]]
+
+	-- setter
+	local setterexp = {}
+	if attributes.readonly.val ~= "true" then
+		local set_fs = {}
+					set_fs.upvalues = {}
+					set_fs.actvar = {}
+		self:open_func(ls, set_fs)
+		set_fs.f.lineDefined = ls.linenumber
+		set_fs.f.lastlinedefined = ls.linenumber
+
+		local paramName = "set" .. localName
+		self:new_localvar(ls, paramName, 0)
+		self:adjustlocalvars(ls, 1)
+		set_fs.f.numparams = set_fs.nactvar - (set_fs.f.is_vararg % self.HASARG_MASK)
+		luaK:reserveregs(set_fs, set_fs.nactvar)
+
+		local setTo = {}
+		self:singlevaraux(set_fs, paramName, setTo, 1)
+
+		local setlocvar = {}
+		self:singlevaraux(set_fs, localName, setlocvar)
+		luaK:storevar(set_fs, setlocvar, setTo)
+
+		self:close_func(ls)
+		self:pushclosure(ls, set_fs, setterexp)
+	else
+		self:init_exp(setterexp, "VNIL", 0)
+	end
+	luaK:exp2reg(ls.fs, setterexp, base + 4)
+	local setternameexp = {}
+	self:codestring(ls, setternameexp, attributes.setter.val)
+	luaK:exp2reg(ls.fs, setternameexp, base + 5)
+
+	--[[local globalsetter = {}
+	self:init_exp(globalsetter, "VGLOBAL", luaP.NO_REG)
+	globalsetter.info = luaK:stringK(ls.fs, "set"..name:sub(1,1):upper()..name:sub(2)..":")
+	luaK:storevar(ls.fs, globalsetter, setterexp)]]
+
+	luaK:codeABC(ls.fs, "OP_CALL", base, 6, 1)
 
 	if not isCustomName then
 		self:leavelevel(ls)

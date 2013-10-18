@@ -397,7 +397,6 @@ end
 -- * used in luaK:reserveregs(), (lparser) luaY:forlist()
 ------------------------------------------------------------------------
 function luaK:checkstack(fs, n)
-	if not n then error("test", 2) end
 	local newstack = fs.freereg + n
 	if newstack > fs.f.maxstacksize then
 		if newstack >= self.MAXSTACK then
