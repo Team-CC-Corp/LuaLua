@@ -998,10 +998,8 @@ end
 function luaY:prefixexp(ls, v)
 	-- prefixexp -> NAME | '(' expr ')'
 	local c = ls.t.token
-	if self:testnext(ls, "TK_METHOD_OPEN") then
+	if self:testnext(ls, "|") then
 		self:methodcall(ls, v)
-	elseif self:testnext(ls, "TK_METHOD_GLOBAL_OPEN") then
-		self:methodcallglobal(ls, v)
 	elseif c == "(" then
 		local line = ls.linenumber
 		luaX:next(ls)
@@ -1023,7 +1021,6 @@ end
 ------------------------------------------------------------------------
 function luaY:primaryexp(ls, v)
 	-- primaryexp ->
-	--    methodcall
 	--    prefixexp { '.' NAME | '[' exp ']' | ':' NAME funcargs | funcargs }
 
 	local fs = ls.fs
@@ -1569,7 +1566,7 @@ end
 function luaY:localfunc(ls)
 	local v, b = {}, {}  -- expdesc
 	local fs = ls.fs
-	if self:testnext(ls, "TK_METHOD_DECLARATION") then
+	if self:testnext(ls, "(") then
 		self:methodstat(ls, ls.linenumber, v, b, true)
 	else
 		self:new_localvar(ls, self:str_checkname(ls), 0)
@@ -1632,7 +1629,7 @@ function luaY:funcstat(ls, line)
 	-- funcstat -> FUNCTION funcname body
 	local v, b = {}, {}  -- expdesc
 	luaX:next(ls)  -- skip FUNCTION
-	if self:testnext(ls, "TK_METHOD_DECLARATION") then
+	if self:testnext(ls, "(") then
 		self:methodstat(ls, line, v, b, false)
 	else
 		local needself = self:funcname(ls, v)
@@ -1861,7 +1858,7 @@ function luaY:methodcallglobal(ls, e)
 
 	local name = self:methodnameandargs(ls, args)
 	luaK:setmultret(fs, args)
-	self:checknext(ls, "}")
+	self:checknext(ls, "|")
 
 	if self:hasmultret(args.k) then
 		nparams = self.LUA_MULTRET  -- open call
@@ -1883,6 +1880,10 @@ function luaY:methodcallglobal(ls, e)
 end
 
 function luaY:methodcall(ls, e)
+	if self:testnext(ls, "@") then
+		return self:methodcallglobal(ls, e)
+	end
+
 	local fs = ls.fs
 	self:expr(ls, e)
 	luaK:exp2nextreg(fs, e)
@@ -1892,7 +1893,7 @@ function luaY:methodcall(ls, e)
 
 	local name = self:methodnameandargs(ls, args)
 	luaK:setmultret(fs, args)
-	self:checknext(ls, "]")
+	self:checknext(ls, "|")
 
 	if self:hasmultret(args.k) then
 		nparams = self.LUA_MULTRET  -- open call

@@ -105,6 +105,7 @@ function _G.assert(condition, errMsg, level)
 end
 
 function fs.getDir(_sPath)
+	assert(type(_sPath) == "string", "Expected string, got " .. type(_sPath))
 	return fs.combine("", _sPath:sub(1, -1 - #(fs.getName(_sPath))))
 end
 
@@ -232,20 +233,20 @@ end
 
 _G.LuaObject = newBaseClass(function(self, super)
 	-- instance
-	function @(init)
+	function (init)
 		return self
 	end
 
-	function @(setProperty:propName withGetter:getter named:getterName andSetter:setter named:setterName)
+	function (setProperty:propName withGetter:getter named:getterName andSetter:setter named:setterName)
 		setObjectProperty(self, propName, getter, getterName, setter, setterName)
 	end
 end, function(self, super)
 	-- static
-	function @(new)
+	function (new)
 		return newObject(self)
 	end
 
-	function @(subclassWithClassInstantiator:static andObjectInstantiator:instance)
+	function (subclassWithClassInstantiator:static andObjectInstantiator:instance)
 		return newClass(self, instance, static)
 	end
 end)
@@ -253,23 +254,23 @@ end)
 
 ------- Modules
 
-local function @(createRequireForDir:dir withModules:modules)
+local function (createRequireForDir:dir withModules:modules)
 	return function(file)
 		assert(type(file) == "string", "Path expected", 2)
 		if file:sub(1,1) == "/" or file:sub(1,1) == "\\" then
 			dir = ""
 		end
 		file = fs.combine(dir, file)
-		if modules[file] then
-			return modules[file]
+		if not modules[file] then
+			assert(fs.exists(file) and not fs.isDir(file), "Expected module", 2)
+			local f, err = loadfile(file)
+			assert(f, err, 2)
+			local env = setmetatable({}, {__index = _G})
+			env.require = |@ createRequireForDir:fs.getDir(file) withModules:modules|
+			setfenv(f, env)
+			modules[file] = f()
 		end
-		assert(fs.exists(file) and not fs.isDir(file), "Expected module", 2)
-		local f, err = loadfile(file)
-		assert(f, err, 2)
-		local env = setmetatable({}, {__index = _G})
-		env.require = @{createRequireForDir:fs.getDir(file) withModules:modules}
-		setfenv(f, env)
-		modules[file] = f()
+		
 		return modules[file]
 	end
 end
@@ -277,6 +278,6 @@ end
 local oldRun = os.run
 function os.run( _tEnv, _sPath, ... )
 	local modules = {}
-	_tEnv.require = @{createRequireForDir:fs.getDir(_sPath) withModules:modules}
+	_tEnv.require = |@ createRequireForDir:fs.getDir(_sPath) withModules:modules|
 	oldRun(_tEnv, _sPath, ...)
 end

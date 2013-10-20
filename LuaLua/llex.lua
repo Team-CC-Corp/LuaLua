@@ -110,9 +110,6 @@ TK_NAME <name>
 TK_NUMBER <number>
 TK_STRING <string>
 TK_EOS <eof>
-TK_METHOD_DECLARATION @()
-TK_METHOD_OPEN @[
-TK_METHOD_GLOBAL_OPEN @{
 TK_CLASS @class
 TK_PROPERTY @property
 TK_STATIC @static]]
@@ -248,7 +245,7 @@ function luaX:lexerror(ls, msg, token)
 		msg = string.format("%s near "..self.LUA_QS, msg, txtToken(ls, token))
 	end
 	-- luaD_throw(ls->L, LUA_ERRSYNTAX)
-	error(msg)
+	error(msg,0)
 end
 
 ------------------------------------------------------------------------
@@ -696,33 +693,28 @@ end
 
 
 ----------------------------------------------------------------
--- Begin Objective L lexing
+-- Begin LuaLua lexing
 ----------------------------------------------------------------
 
 function luaX:LuaLuaProcess(ls, Token)
 	local c = self:nextc(ls)
-	if c == "\"" or c == "'" then
-		self:read_string(ls, c, Token)
+	self:lookahead(ls)
+	if ls.lookahead.token == "TK_STRING" then
+		local s = ls.lookahead.seminfo
+		self:next(ls)
+		Token.seminfo = s
 		return "TK_NAME"
-	elseif c == "[" then
-		self:nextc(ls)
-		return "TK_METHOD_OPEN"
-	elseif c == "(" then
-		self:nextc(ls)
-		return "TK_METHOD_DECLARATION"
-	elseif c == "{" then
-		self:nextc(ls)
-		return "TK_METHOD_GLOBAL_OPEN"
-	else
-		local t = {}
-		t.token = self:llex(ls, t)
-		if t.token == "TK_NAME" and t.seminfo == "property" then
+	elseif ls.lookahead.token == "TK_NAME" then
+		if ls.lookahead.seminfo == "property" then
+			self:next(ls)
 			return "TK_PROPERTY"
-		elseif t.token == "TK_NAME" and t.seminfo == "class" then
+		elseif ls.lookahead.seminfo == "class" then
+			self:next(ls)
 			return "TK_CLASS"
-		elseif t.token == "TK_NAME" and t.seminfo == "static" then
+		elseif ls.lookahead.seminfo == "static" then
+			self:next(ls)
 			return "TK_STATIC"
 		end
 	end
-	self:syntaxerror(ls, "Expected LuaLua directive")
+	return "@"
 end
