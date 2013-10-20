@@ -8,7 +8,7 @@ for i=1,10 do
 	end
 end
 
-assert(@[@[classes[3] new] init].getI() == 3)
+assert(||classes[3] new| init|.getI() == 3)
 
 @class classes.A : classes[4]
 	@property a
@@ -21,7 +21,7 @@ assert(@[@[classes[3] new] init].getI() == 3)
 		return self
 	end
 
-	function @(getD:__d)
+	function (getD:__d)
 		if __d then
 			_d = __d
 		else
@@ -38,7 +38,7 @@ assert(@[@[classes[3] new] init].getI() == 3)
 	end
 end
 
-local aObj = @[@[classes.A new] init]
+local aObj = ||classes.A new| init|
 assert(aObj.getI() == 6)
 aObj.a = 3
 assert(aObj.a == 3)
@@ -48,8 +48,8 @@ aObj.c = 1
 assert(aObj.cc() == 1)
 assert(not pcall(function() return aObj.c end))
 aObj.d = 6
-@[aObj getD:7]
-assert(@[aObj getD:nil] == aObj.d and aObj.d == 7)
+|aObj getD:7|
+assert(|aObj getD:nil| == aObj.d and aObj.d == 7)
 
 
 local @class LocalClass : LuaObject
@@ -58,5 +58,5 @@ local @class LocalClass : LuaObject
 	end
 end
 
-local localObj = @[@[LocalClass new] init]
+local localObj = ||LocalClass new| init|
 assert(localObj)
