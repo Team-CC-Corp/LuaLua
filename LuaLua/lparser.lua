@@ -2147,6 +2147,7 @@ function luaY:propertystat(ls, line)
 	luaK:storevar(ls.fs, globalsetter, setterexp)]]
 
 	luaK:codeABC(ls.fs, "OP_CALL", base, 6, 1)
+	luaK:_nil(ls.fs, base, 6)
 
 	if not isCustomName then
 		self:leavelevel(ls)
