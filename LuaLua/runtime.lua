@@ -259,6 +259,7 @@ end)
 local function (createRequireForDir:dir withModules:modules)
 	return function(file)
 		assert(type(file) == "string", "Path expected", 2)
+		local dir = dir
 		if file:sub(1,1) == "/" or file:sub(1,1) == "\\" then
 			dir = ""
 		end
