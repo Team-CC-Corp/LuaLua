@@ -246,10 +246,17 @@ end, function(self, super)
 	end
 
 	function (isSubclassOf:superClass)
-		if superClass == self then
-			return true
+		local test = self
+		while true do
+			if superClass == test then
+				return true
+			end
+			if test.superClass then
+				test = test.superClass
+			else
+				return false
+			end
 		end
-		return |super isSubclassOf:superClass|
 	end
 end)
 
