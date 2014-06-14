@@ -244,6 +244,13 @@ end, function(self, super)
 	function (subclassWithClassInstantiator:static andObjectInstantiator:instance)
 		return newClass(self, instance, static)
 	end
+
+	function (isSubclassOf:superClass)
+		if superClass == self then
+			return true
+		end
+		return |super isSubclassOf:superClass|
+	end
 end)
 
 
