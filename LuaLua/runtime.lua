@@ -104,13 +104,6 @@ function _G.assert(condition, errMsg, level)
 	error(errMsg or "Assertion failed!", level)
 end
 
-function fs.getDir(_sPath)
-	assert(type(_sPath) == "string", "Expected string, got " .. type(_sPath))
-	return fs.combine("", _sPath:sub(1, -1 - #(fs.getName(_sPath))))
-end
-
-fs["getDir:"] = fs.getDir
-
 ------- Instantiation stuff
 
 local function createMethods(class, obj)
