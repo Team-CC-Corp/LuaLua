@@ -8,6 +8,7 @@ for i=1,10 do
 	end
 end
 
+
 assert(||classes[3] new| init|.getI() == 3)
 
 @class classes.A : classes[4]
