@@ -1,0 +1,35 @@
+<project name="LUALUA" default="main">
+    <condition property="is_windows">
+        <os family="windows"/>
+    </condition>
+    <condition property="is_unix">
+        <os family="unix" />
+    </condition>
+
+    <target name="make_archive">
+        <copy todir="build/LuaLua">
+            <fileset dir="LuaLua" />
+        </copy>
+        <zip zip64Mode="never" destfile="build/LuaLua.zip" basedir="build/LuaLua" />
+    </target>
+
+    <target name="if_windows" if="is_windows" depends="make_archive">
+        <exec executable="certutil">
+            <arg value="-encode" />
+            <arg value="build/LuaLua.zip" />
+            <arg value="build/LuaLua.zip.base64" />
+        </exec>
+    </target>
+
+    <target name="if_unix" if="is_unix" depends="make_archive">
+        <exec executable="base64">
+            <arg value="-i" />
+            <arg value="build/LuaLua.zip" />
+            <arg value="-o" />
+            <arg value="build/LuaLua.zip.base64" />
+        </exec>
+    </target>
+
+    <target name="main" depends="if_windows, if_unix">
+    </target>
+</project>

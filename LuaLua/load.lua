@@ -1,6 +1,5 @@
 local ls = loadstring
-local me = shell.getRunningProgram()
-local dir = fs.combine("", me:sub(1, -1 - #(fs.getName(me)))) -- fs.combine to remove / if this is in a directory
+local dir = fs.getDir(shell.getRunningProgram())
 local files = {}
 
 
