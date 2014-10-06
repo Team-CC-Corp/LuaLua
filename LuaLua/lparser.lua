@@ -1081,7 +1081,7 @@ function luaY:simpleexp(ls, v)
 	elseif c == "{" then  -- constructor
 		self:constructor(ls, v)
 		return
-	elseif c == "TK_FUNCTION" then
+	elseif c == "TK_FUNCTION" or c == "\\" then
 		luaX:next(ls)
 		self:body(ls, v, false, ls.linenumber)
 		return

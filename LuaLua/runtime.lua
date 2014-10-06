@@ -88,8 +88,8 @@ local function setObjectProperty(obj, propName, getter, getterName, setter, sett
 	local tMethods = methodsTable or obj.methods
 	local propertyMap = propMap or obj.propertyMap
 	propertyMap[propName] = {setter=setterName,getter=getterName}
-	tMethods[getterName] = getter or function() error(propName .. " is not readable", 3) end
-	tMethods[setterName..":"] = setter or function() error(propName .. " is not writable", 3) end
+	tMethods[getterName] = getter or \() error(propName .. " is not readable", 3) end
+	tMethods[setterName..":"] = setter or \() error(propName .. " is not writable", 3) end
 end
 
 function _G.assert(condition, errMsg, level)
@@ -112,7 +112,7 @@ local function createMethods(class, obj)
 		superMethods, superProperties = createMethods(class.superClass, obj)
 	end
 
-	local methods = setmetatable({}, {__index = superMethods, __newindex = function(t,k,v)
+	local methods = setmetatable({}, {__index = superMethods, __newindex = \(t,k,v)
 		assert(type(v) == "function", "Only functions allowed in class body: " .. k .. " = " .. tostring(v))
 		rawset(t,k,v)
 	end})
@@ -122,13 +122,14 @@ local function createMethods(class, obj)
 
 
 	setmetatable(obj, {
-		__index = function(t,k)
+		__index = \(t,k)
 			if propertyMap[k] then
-				return methods[propertyMap[k].getter]()
+				local ret = methods[propertyMap[k].getter]()
+				return ret
 			end
 			return methods[k]
 		end,
-		__newindex = function(t,k,v)
+		__newindex = \(t,k,v)
 			if propertyMap[k] then
 				methods[propertyMap[k].setter..":"](v)
 			else
@@ -136,9 +137,9 @@ local function createMethods(class, obj)
 			end
 		end
 	})
-	setObjectProperty(obj, "methods", function() return methods end, "getMethods", nil, "setMethods", methods, propertyMap) -- pass the methodstable because the property doesn't exist yet
-	setObjectProperty(obj, "propertyMap", function() return propertyMap end, "getPropertyMap", nil, "setPropertyMap", methods, propertyMap)
-	setObjectProperty(obj, "class", function() return class end, "getClass", nil, "setClass")
+	setObjectProperty(obj, "methods", \() return methods end, "getMethods", nil, "setMethods", methods, propertyMap) -- pass the methodstable because the property doesn't exist yet
+	setObjectProperty(obj, "propertyMap", \() return propertyMap end, "getPropertyMap", nil, "setPropertyMap", methods, propertyMap)
+	setObjectProperty(obj, "class", \() return class end, "getClass", nil, "setClass")
 
 
 
@@ -149,7 +150,7 @@ local function createMethods(class, obj)
 	-- obj's metatable can't be made until after methods are created
 	-- must therefore not reference it until after instantiation
 	local mt = {
-		__index = function(t,k)
+		__index = \(t,k)
 			return methods[k] or oldEnv[k]
 		end,
 		__newindex = methods
@@ -160,7 +161,7 @@ local function createMethods(class, obj)
 	class.instantiator(obj, superMethods)
 	setfenv(class.instantiator, oldEnv)
 
-	mt.__index = function(t,k)
+	mt.__index = \(t,k)
 		return obj[k] or oldEnv[k]
 	end
 	mt.__newindex = obj
@@ -182,25 +183,25 @@ local function newBaseClass(instance, static)
 	-- Metaclass is an instance of itself. static is all we know about it, so use that
 	local metaclass = newObject({instantiator = static})
 	-- It also instantiates class, so the instantiator is static
-	setObjectProperty(metaclass, "instantiator", function() return static end, "getInstantiator", nil, "setInstantiator")
+	setObjectProperty(metaclass, "instantiator", \() return static end, "getInstantiator", nil, "setInstantiator")
 	-- Class obviously is an instance of its metaclass
 	local class = newObject(metaclass)
 	
 	-- Set the remaining properties for the two under-developed classes
 	-- Class doesn't have a superclass, metaclass's superclass is class
-	setObjectProperty(metaclass, "superClass", function() return class end, "getSuperClass", nil, "setSuperClass")
-	setObjectProperty(class, "instantiator", function() return instance end, "getInstantiator", nil, "setInstantiator")
+	setObjectProperty(metaclass, "superClass", \() return class end, "getSuperClass", nil, "setSuperClass")
+	setObjectProperty(class, "instantiator", \() return instance end, "getInstantiator", nil, "setInstantiator")
 	
 	-- reassign in order for both to have each other's methods
 	metaclass = newObject(metaclass)
-	setObjectProperty(metaclass, "superClass", function() return class end, "getSuperClass", nil, "setSuperClass")
-	setObjectProperty(metaclass, "instantiator", function() return static end, "getInstantiator", nil, "setInstantiator")
-	setObjectProperty(metaclass, "class", function() return metaclass end, "getClass", nil, "setClass")
+	setObjectProperty(metaclass, "superClass", \() return class end, "getSuperClass", nil, "setSuperClass")
+	setObjectProperty(metaclass, "instantiator", \() return static end, "getInstantiator", nil, "setInstantiator")
+	setObjectProperty(metaclass, "class", \() return metaclass end, "getClass", nil, "setClass")
 
 	class = newObject(metaclass)
-	setObjectProperty(class, "superClass", function() end, "getSuperClass", nil, "setSuperClass") -- There is no superclass!
-	setObjectProperty(class, "instantiator", function() return instance end, "getInstantiator", nil, "setInstantiator")
-	setObjectProperty(class, "class", function() return metaclass end, "getClass", nil, "setClass")
+	setObjectProperty(class, "superClass", \() end, "getSuperClass", nil, "setSuperClass") -- There is no superclass!
+	setObjectProperty(class, "instantiator", \() return instance end, "getInstantiator", nil, "setInstantiator")
+	setObjectProperty(class, "class", \() return metaclass end, "getClass", nil, "setClass")
 
 	return class
 end
@@ -211,13 +212,13 @@ local function newClass(super, instance, static)
 	
 	-- All metaclasses are instances of the base metaclasses
 	local metaclass = newObject(baseMetaclass)
-	setObjectProperty(metaclass, "superClass", function() return super.class end, "getSuperClass", nil, "setSuperClass")
-	setObjectProperty(metaclass, "instantiator", function() return static end, "getInstantiator", nil, "setInstantiator")
+	setObjectProperty(metaclass, "superClass", \() return super.class end, "getSuperClass", nil, "setSuperClass")
+	setObjectProperty(metaclass, "instantiator", \() return static end, "getInstantiator", nil, "setInstantiator")
 	-- Unlike when creating base classes, regular classes have their class properties properly created by newObject()
 
 	local class = newObject(metaclass)
-	setObjectProperty(class, "superClass", function() return super end, "getSuperClass", nil, "setSuperClass")
-	setObjectProperty(class, "instantiator", function() return instance end, "getInstantiator", nil, "setInstantiator")
+	setObjectProperty(class, "superClass", \() return super end, "getSuperClass", nil, "setSuperClass")
+	setObjectProperty(class, "instantiator", \() return instance end, "getInstantiator", nil, "setInstantiator")
 
 	return class
 end
@@ -226,7 +227,7 @@ end
 
 ------- LuaObject
 
-_G.LuaObject = newBaseClass(function(self, super)
+_G.LuaObject = newBaseClass(\(self, super)
 	-- instance
 	function (init)
 		return self
@@ -235,10 +236,11 @@ _G.LuaObject = newBaseClass(function(self, super)
 	function (setProperty:propName withGetter:getter named:getterName andSetter:setter named:setterName)
 		setObjectProperty(self, propName, getter, getterName, setter, setterName)
 	end
-end, function(self, super)
+end, \(self, super)
 	-- static
 	function (new)
-		return newObject(self)
+		local obj = newObject(self)
+		return obj
 	end
 
 	function (subclassWithClassInstantiator:static andObjectInstantiator:instance)
@@ -264,7 +266,7 @@ end)
 ------- Modules
 
 local function (createRequireForDir:dir withModules:modules)
-	return function(file)
+	return \(file)
 		assert(type(file) == "string", "Path expected", 2)
 		local dir = dir
 		if file:sub(1,1) == "/" or file:sub(1,1) == "\\" then
