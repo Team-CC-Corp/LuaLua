@@ -107,7 +107,7 @@ end
 ------- Instantiation stuff
 
 local function createMethods(class, obj)
-	local superMethods
+	local superMethods, superProperties
 	if class.superClass then
 		superMethods, superProperties = createMethods(class.superClass, obj)
 	end
