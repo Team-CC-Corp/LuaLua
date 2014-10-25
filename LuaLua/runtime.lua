@@ -288,7 +288,9 @@ local function (createRequireForDir:dir withModules:modules)
 end
 
 local oldRun = os.run
-function os.run( _tEnv, _sPath, ... )
+function os.run(_tEnv, _sPath, ...)
+	assert(type(_tEnv) == "table" and type(_sPath) == "string", "Expected table, string", 2)
+
 	local modules = {}
 	_tEnv.require = |@ createRequireForDir:fs.getDir(_sPath) withModules:modules|
 	oldRun(_tEnv, _sPath, ...)
