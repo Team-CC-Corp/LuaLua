@@ -1834,8 +1834,11 @@ function luaY:methodnameandargs(ls, v)
 	local numargs = 0
 	while self:testnext(ls, ":") do
 		name = name .. ":"
+		if numargs > 0 then
+			luaK:exp2nextreg(ls.fs, v)
+		end
 		local n = self:explist1(ls, v)
-		luaK:exp2nextreg(ls.fs, v)
+		numargs = numargs + n
 		if n > 1 then
 			break
 		elseif ls.t.token == "TK_NAME" then
@@ -1863,6 +1866,9 @@ function luaY:methodcallglobal(ls, e)
 	if self:hasmultret(args.k) then
 		nparams = self.LUA_MULTRET  -- open call
 	else
+		if args.k ~= "VVOID" then
+			luaK:exp2nextreg(fs, args)
+		end
 		nparams = fs.freereg - (base + 1)
 	end
 
@@ -1898,6 +1904,9 @@ function luaY:methodcall(ls, e)
 	if self:hasmultret(args.k) then
 		nparams = self.LUA_MULTRET  -- open call
 	else
+		if args.k ~= "VVOID" then
+			luaK:exp2nextreg(fs, args)
+		end
 		nparams = fs.freereg - (base + 1)
 	end
 
