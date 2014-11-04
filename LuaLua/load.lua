@@ -11,6 +11,8 @@ for i,v in ipairs({"lcode.lua", "ldump.lua", "llex.lua", "lopcodes.lua", "lparse
 end
 
 function _G.loadstring(str, source)
+	source = source or ""
+	assert(type(source) == "string", "Expected string, got " .. type(source), 2)
 	local header = 0
 	if #str > 12 then -- header size is 12
 		for i = 1, 4 do
