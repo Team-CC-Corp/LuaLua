@@ -293,5 +293,5 @@ function os.run(_tEnv, _sPath, ...)
 
 	local modules = {}
 	_tEnv.require = |@ createRequireForDir:fs.getDir(_sPath) withModules:modules|
-	oldRun(_tEnv, _sPath, ...)
+	return oldRun(_tEnv, _sPath, ...)
 end
