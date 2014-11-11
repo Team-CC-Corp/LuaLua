@@ -295,3 +295,32 @@ function os.run(_tEnv, _sPath, ...)
 	_tEnv.require = |@ createRequireForDir:fs.getDir(_sPath) withModules:modules|
 	return oldRun(_tEnv, _sPath, ...)
 end
+
+-- Let APIs use require()
+local tAPIsLoading = {}
+function os.loadAPI(path)
+    assert(type(path) == "string", "Expected string", 2)
+
+    local sName = fs.getName(path):gsub("%.lua$", "")
+
+    if tAPIsLoading[sName] == true then
+        printError( "API "..sName.." is already being loaded" )
+        return false
+    end
+    tAPIsLoading[sName] = true
+        
+    local tEnv = {}
+    if not os.run(tEnv, path) then
+        tAPIsLoading[sName] = nil
+        return false
+    end
+    
+    local tAPI = {}
+    for k,v in pairs( tEnv ) do
+        tAPI[k] =  v
+    end
+    
+    _G[sName] = tAPI    
+    tAPIsLoading[sName] = nil
+    return true
+end
