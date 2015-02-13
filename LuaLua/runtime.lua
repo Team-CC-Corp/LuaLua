@@ -312,16 +312,36 @@ local function (createRequireForDir:dir withModules:modules)
 	end
 end
 
-local oldRun = os.run
-function os.run(_tEnv, _sPath, ...)
+function os.run( _tEnv, _sPath, ... )
 	assert(type(_tEnv) == "table" and type(_sPath) == "string", "Expected table, string", 2)
 
-	local modules = {}
-	_tEnv.require = |@ createRequireForDir:fs.getDir(_sPath) withModules:modules|
-	return oldRun(_tEnv, _sPath, ...)
+    local fnFile, err = loadfile( _sPath )
+    if fnFile then
+        local tEnv = _tEnv
+
+        local index = setmetatable({}, {__index = _G})
+        local modules = {}
+        index.require = |@ createRequireForDir:fs.getDir(_sPath) withModules:modules|
+
+        setmetatable( tEnv, { __index = index } )
+        setfenv( fnFile, tEnv )
+        local ok, err = pcall(fnFile, ...)
+        if not ok then
+            if err and err ~= "" then
+                printError( err )
+            end
+            return false
+        end
+        return true
+    end
+    if err and err ~= "" then
+        printError( err )
+    end
+    return false
 end
 
 -- Let APIs use require()
+
 local tAPIsLoading = {}
 function os.loadAPI(path)
     assert(type(path) == "string", "Expected string", 2)
