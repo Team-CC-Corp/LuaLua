@@ -265,25 +265,50 @@ end)
 
 ------- Modules
 
+_G.Modules = @class:LuaObject @static
+	@property path
+
+	function (appendPath: _path)
+		self.path = self.path .. ":" .. _path
+	end
+end
+-- noop object
+end
+
+Modules.path = "."
+|Modules appendPath: fs.combine(__luaLuaDir, "mod")|
+
 local function (createRequireForDir:dir withModules:modules)
 	return \(file)
 		assert(type(file) == "string", "Path expected", 2)
-		local dir = dir
-		if file:sub(1,1) == "/" or file:sub(1,1) == "\\" then
-			dir = ""
+		local path = Modules.path
+		if file:find("^[/\\]") then
+			path = fs.getDir(file)
 		end
-		file = fs.combine(dir, file)
-		if not modules[file] then
-			assert(fs.exists(file) and not fs.isDir(file), "Expected module", 2)
-			local f, err = loadfile(file)
-			assert(f, err, 2)
-			local env = setmetatable({}, {__index = _G})
-			env.require = |@ createRequireForDir:fs.getDir(file) withModules:modules|
-			setfenv(f, env)
-			modules[file] = f()
+
+		for sPath in path:gmatch("[^:]+") do
+			local fullDir
+			if sPath:find("^[/\\]") then
+				fullDir = sPath
+			else
+				fullDir = fs.combine(dir, sPath)
+			end
+			local fullPath = fs.combine(fullDir, fs.getName(file))
+			if modules[fullPath] then
+				return modules[fullPath].mod
+			end
+			if fs.exists(fullPath) and not fs.isDir(fullPath) then
+				local f, err = loadfile(fullPath)
+				assert(f, err, 2)
+				local env = setmetatable({}, {__index = _G})
+				env.require = |@ createRequireForDir:fs.getDir(file) withModules:modules|
+				setfenv(f, env)
+				modules[file] = {found=true}
+				modules[file].mod = f()
+				return modules[file].mod
+			end
 		end
-		
-		return modules[file]
+		error("Module not found: " .. file, 2)
 	end
 end
 
