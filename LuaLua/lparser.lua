@@ -967,6 +967,9 @@ function luaY:funcargs(ls, f)
 	elseif c == "TK_STRING" then  -- funcargs -> STRING
 		self:codestring(ls, args, ls.t.seminfo)
 		luaX:next(ls)  -- must use 'seminfo' before 'next'
+	elseif c == "\\" then
+		luaX:next(ls)
+		self:body(ls, args, false, ls.linenumber)
 	else
 		luaX:syntaxerror(ls, "function arguments expected")
 		return
@@ -1040,7 +1043,7 @@ function luaY:primaryexp(ls, v)
 			self:checkname(ls, key)
 			luaK:_self(fs, v, key)
 			self:funcargs(ls, v)
-		elseif c == "(" or c == "TK_STRING" or c == "{" then  -- funcargs
+		elseif c == "(" or c == "TK_STRING" or c == "{" or c == "\\" then  -- funcargs
 			luaK:exp2nextreg(fs, v)
 			self:funcargs(ls, v)
 		else
