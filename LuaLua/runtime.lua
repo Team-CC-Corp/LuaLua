@@ -244,7 +244,7 @@ end, \(self, super)
 	end
 
 	function (subclassWithClassInstantiator:static andObjectInstantiator:instance)
-		return newClass(self, instance, static)
+		return |newClass(self, instance, static) init|
 	end
 
 	function (isSubclassOf:superClass)
