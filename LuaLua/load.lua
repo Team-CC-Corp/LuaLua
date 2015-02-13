@@ -16,7 +16,7 @@ function _G.loadstring(str, source)
 	local header = 0
 	if #str > 12 then -- header size is 12
 		for i = 1, 4 do
-			header = header + 2 ^ (8 * (4 - i)) * string.byte(str:sub(i,i))
+			header = header + 2 ^ (8 * (4 - i)) * str:byte(i, i)
 		end
 	end
 
@@ -27,7 +27,7 @@ function _G.loadstring(str, source)
 	local compileEnv = setmetatable({}, {__index=_G})
 	function compileEnv.dofile(name)
 		setfenv(files[name], compileEnv)
-		files[name]()
+		return files[name]()
 	end
 
 	setfenv(files["luac.lua"], compileEnv)
@@ -39,4 +39,5 @@ function _G.loadstring(str, source)
 	return ls(str, source)
 end
 
+_G.__luaLuaDir = dir
 assert(loadfile(fs.combine(dir, "runtime.lua")))()
