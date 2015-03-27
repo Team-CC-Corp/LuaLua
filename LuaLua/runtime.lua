@@ -276,7 +276,7 @@ end
 end
 
 Modules.path = "."
-|Modules appendPath: fs.combine(__luaLuaDir, "mod")|
+|Modules appendPath: "/"..fs.combine(__luaLuaDir, "mod")|
 
 local function (createRequireForDir:dir withModules:modules)
 	return \(file)
@@ -293,7 +293,7 @@ local function (createRequireForDir:dir withModules:modules)
 			else
 				fullDir = fs.combine(dir, sPath)
 			end
-			local fullPath = fs.combine(fullDir, fs.getName(file))
+			local fullPath = fs.combine(fullDir, file)
 			if modules[fullPath] then
 				return modules[fullPath].mod
 			end
