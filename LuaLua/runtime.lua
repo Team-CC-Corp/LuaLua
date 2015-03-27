@@ -303,9 +303,9 @@ local function (createRequireForDir:dir withModules:modules)
 				local env = setmetatable({}, {__index = _G})
 				env.require = |@ createRequireForDir:fs.getDir(file) withModules:modules|
 				setfenv(f, env)
-				modules[file] = {found=true}
-				modules[file].mod = f()
-				return modules[file].mod
+				modules[fullPath] = {found=true}
+				modules[fullPath].mod = f()
+				return modules[fullPath].mod
 			end
 		end
 		error("Module not found: " .. file, 2)
